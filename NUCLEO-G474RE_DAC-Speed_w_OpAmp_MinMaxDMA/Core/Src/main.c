@@ -32,6 +32,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+#define MinMaxsamples_SIZE       (sizeof (MinMaxsamples) / sizeof (uint16_t))
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,6 +50,8 @@ UART_HandleTypeDef hlpuart1;
 
 /* USER CODE BEGIN PV */
 
+uint16_t MinMaxsamples[] = {0x00 , 0xfff};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -60,6 +65,9 @@ static void MX_OPAMP6_Init(void);
 /* USER CODE BEGIN PFP */
 
 void LL_DAC3_EnableDMA(void);
+void Activate_DAC(void);
+void Activate_OPAMP(void);
+static void HRTIM1_Start_Output(void);
 
 /* USER CODE END PFP */
 
@@ -103,12 +111,20 @@ int main(void)
   MX_OPAMP6_Init();
   /* USER CODE BEGIN 2 */
 
+  Activate_DAC();
+  Activate_OPAMP();
+  LL_DAC3_EnableDMA();
+
+  HRTIM1_Start_Output();
+
+//  GPIOA->BSRR = (1<<5);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+//	  GPIOA->BSRR = (1<<5);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -209,15 +225,16 @@ static void MX_DAC3_Init(void)
   /* USER CODE END DAC3_Init 1 */
   /** DAC channel OUT1 config
   */
+  LL_DAC_SetHighFrequencyMode(DAC3, LL_DAC_HIGH_FREQ_MODE_ABOVE_160MHZ);
   LL_DAC_SetSignedFormat(DAC3, LL_DAC_CHANNEL_1, LL_DAC_SIGNED_FORMAT_DISABLE);
-  DAC_InitStruct.TriggerSource = LL_DAC_TRIG_SOFTWARE;
+  DAC_InitStruct.TriggerSource = LL_DAC_TRIG_EXT_HRTIM_RST_TRG1;
   DAC_InitStruct.TriggerSource2 = LL_DAC_TRIG_SOFTWARE;
   DAC_InitStruct.WaveAutoGeneration = LL_DAC_WAVE_AUTO_GENERATION_NONE;
   DAC_InitStruct.OutputBuffer = LL_DAC_OUTPUT_BUFFER_DISABLE;
   DAC_InitStruct.OutputConnection = LL_DAC_OUTPUT_CONNECT_INTERNAL;
   DAC_InitStruct.OutputMode = LL_DAC_OUTPUT_MODE_NORMAL;
   LL_DAC_Init(DAC3, LL_DAC_CHANNEL_1, &DAC_InitStruct);
-  LL_DAC_DisableTrigger(DAC3, LL_DAC_CHANNEL_1);
+  LL_DAC_EnableTrigger(DAC3, LL_DAC_CHANNEL_1);
   LL_DAC_DisableDMADoubleDataMode(DAC3, LL_DAC_CHANNEL_1);
   /* USER CODE BEGIN DAC3_Init 2 */
 
@@ -238,8 +255,8 @@ static void MX_HRTIM1_Init(void)
   /* USER CODE END HRTIM1_Init 0 */
 
   HRTIM_TimeBaseCfgTypeDef pTimeBaseCfg = {0};
-  HRTIM_TimerCtlTypeDef pTimerCtl = {0};
   HRTIM_TimerCfgTypeDef pTimerCfg = {0};
+  HRTIM_TimerCtlTypeDef pTimerCtl = {0};
   HRTIM_OutputCfgTypeDef pOutputCfg = {0};
 
   /* USER CODE BEGIN HRTIM1_Init 1 */
@@ -264,6 +281,30 @@ static void MX_HRTIM1_Init(void)
   pTimeBaseCfg.RepetitionCounter = 0x00;
   pTimeBaseCfg.PrescalerRatio = HRTIM_PRESCALERRATIO_MUL32;
   pTimeBaseCfg.Mode = HRTIM_MODE_CONTINUOUS;
+  if (HAL_HRTIM_TimeBaseConfig(&hhrtim1, HRTIM_TIMERINDEX_MASTER, &pTimeBaseCfg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  pTimerCfg.InterruptRequests = HRTIM_MASTER_IT_MUPD;
+  pTimerCfg.DMARequests = HRTIM_MASTER_DMA_NONE;
+  pTimerCfg.DMASrcAddress = 0x0000;
+  pTimerCfg.DMADstAddress = 0x0000;
+  pTimerCfg.DMASize = 0x1;
+  pTimerCfg.HalfModeEnable = HRTIM_HALFMODE_DISABLED;
+  pTimerCfg.InterleavedMode = HRTIM_INTERLEAVED_MODE_DISABLED;
+  pTimerCfg.StartOnSync = HRTIM_SYNCSTART_DISABLED;
+  pTimerCfg.ResetOnSync = HRTIM_SYNCRESET_DISABLED;
+  pTimerCfg.DACSynchro = HRTIM_DACSYNC_DACTRIGOUT_3;
+  pTimerCfg.PreloadEnable = HRTIM_PRELOAD_DISABLED;
+  pTimerCfg.UpdateGating = HRTIM_UPDATEGATING_INDEPENDENT;
+  pTimerCfg.BurstMode = HRTIM_TIMERBURSTMODE_MAINTAINCLOCK;
+  pTimerCfg.RepetitionUpdate = HRTIM_UPDATEONREPETITION_ENABLED;
+  pTimerCfg.ReSyncUpdate = HRTIM_TIMERESYNC_UPDATE_UNCONDITIONAL;
+  if (HAL_HRTIM_WaveformTimerConfig(&hhrtim1, HRTIM_TIMERINDEX_MASTER, &pTimerCfg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  pTimeBaseCfg.RepetitionCounter = 1;
   if (HAL_HRTIM_TimeBaseConfig(&hhrtim1, HRTIM_TIMERINDEX_TIMER_E, &pTimeBaseCfg) != HAL_OK)
   {
     Error_Handler();
@@ -275,29 +316,23 @@ static void MX_HRTIM1_Init(void)
   {
     Error_Handler();
   }
-  pTimerCfg.InterruptRequests = HRTIM_MASTER_IT_NONE;
+  pTimerCfg.InterruptRequests = HRTIM_MASTER_IT_MUPD;
   pTimerCfg.DMARequests = HRTIM_TIM_DMA_NONE;
   pTimerCfg.DMASrcAddress = 0x0000;
   pTimerCfg.DMADstAddress = 0x0000;
   pTimerCfg.DMASize = 0x1;
-  pTimerCfg.HalfModeEnable = HRTIM_HALFMODE_DISABLED;
   pTimerCfg.InterleavedMode = HRTIM_INTERLEAVED_MODE_DUAL;
-  pTimerCfg.StartOnSync = HRTIM_SYNCSTART_DISABLED;
-  pTimerCfg.ResetOnSync = HRTIM_SYNCRESET_DISABLED;
   pTimerCfg.DACSynchro = HRTIM_DACSYNC_NONE;
-  pTimerCfg.PreloadEnable = HRTIM_PRELOAD_DISABLED;
-  pTimerCfg.UpdateGating = HRTIM_UPDATEGATING_INDEPENDENT;
-  pTimerCfg.BurstMode = HRTIM_TIMERBURSTMODE_MAINTAINCLOCK;
-  pTimerCfg.RepetitionUpdate = HRTIM_UPDATEONREPETITION_DISABLED;
+  pTimerCfg.PreloadEnable = HRTIM_PRELOAD_ENABLED;
   pTimerCfg.PushPull = HRTIM_TIMPUSHPULLMODE_DISABLED;
   pTimerCfg.FaultEnable = HRTIM_TIMFAULTENABLE_NONE;
   pTimerCfg.FaultLock = HRTIM_TIMFAULTLOCK_READWRITE;
   pTimerCfg.DeadTimeInsertion = HRTIM_TIMDEADTIMEINSERTION_DISABLED;
   pTimerCfg.DelayedProtectionMode = HRTIM_TIMER_D_E_DELAYEDPROTECTION_DISABLED;
-  pTimerCfg.UpdateTrigger = HRTIM_TIMUPDATETRIGGER_NONE;
-  pTimerCfg.ResetTrigger = HRTIM_TIMRESETTRIGGER_NONE;
-  pTimerCfg.ResetUpdate = HRTIM_TIMUPDATEONRESET_DISABLED;
-  pTimerCfg.ReSyncUpdate = HRTIM_TIMERESYNC_UPDATE_UNCONDITIONAL;
+  pTimerCfg.UpdateTrigger = HRTIM_TIMUPDATETRIGGER_TIMER_E;
+  pTimerCfg.ResetTrigger = HRTIM_TIMRESETTRIGGER_UPDATE;
+  pTimerCfg.ResetUpdate = HRTIM_TIMUPDATEONRESET_ENABLED;
+  pTimerCfg.ReSyncUpdate = HRTIM_TIMERESYNC_UPDATE_CONDITIONAL;
   if (HAL_HRTIM_WaveformTimerConfig(&hhrtim1, HRTIM_TIMERINDEX_TIMER_E, &pTimerCfg) != HAL_OK)
   {
     Error_Handler();
@@ -396,7 +431,7 @@ static void MX_OPAMP6_Init(void)
   /* USER CODE BEGIN OPAMP6_Init 1 */
 
   /* USER CODE END OPAMP6_Init 1 */
-  OPAMP_InitStruct.PowerMode = LL_OPAMP_POWERMODE_NORMAL;
+  OPAMP_InitStruct.PowerMode = LL_OPAMP_POWERMODE_HIGHSPEED;
   OPAMP_InitStruct.FunctionalMode = LL_OPAMP_MODE_FOLLOWER;
   OPAMP_InitStruct.InputNonInverting = LL_OPAMP_INPUT_NONINVERT_DAC;
   LL_OPAMP_Init(OPAMP6, &OPAMP_InitStruct);
@@ -471,14 +506,14 @@ void LL_DAC3_EnableDMA(void)
 	  /* Set DMA transfer addresses of source and destination */
 	  LL_DMA_ConfigAddresses(DMA1,
 	                         LL_DMA_CHANNEL_1,
-	                         (uint32_t)&WaveformSine_12bits_32samples,
+	                         (uint32_t)&MinMaxsamples,
 	                         LL_DAC_DMA_GetRegAddr(DAC3, LL_DAC_CHANNEL_1, LL_DAC_DMA_REG_DATA_12BITS_RIGHT_ALIGNED),
 	                         LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
 
 	  /* Set DMA transfer size */
 	  LL_DMA_SetDataLength(DMA1,
 	                       LL_DMA_CHANNEL_3,
-	                       WAVEFORM_SAMPLES_SIZE);
+						   MinMaxsamples_SIZE);
 
 	  /* Enable DMA transfer interruption: transfer error */
 	  LL_DMA_EnableIT_TE(DMA1,
@@ -509,6 +544,66 @@ void LL_DAC3_EnableDMA(void)
 	  /* Enable interruption DAC channel1 under-run */
 	  LL_DAC_EnableIT_DMAUDR1(DAC1);
 }
+
+void Activate_DAC(void)
+{
+	__IO uint32_t wait_loop_index = 0;
+
+	/* Enable DAC channel */
+	LL_DAC_Enable(DAC3, LL_DAC_CHANNEL_1);
+
+	/* Delay for DAC channel voltage settling time from DAC channel startup.    */
+	/* Compute number of CPU cycles to wait for, from delay in us.              */
+	/* Note: Variable divided by 2 to compensate partially                      */
+	/*       CPU processing cycles (depends on compilation optimization).       */
+	/* Note: If system core clock frequency is below 200kHz, wait time          */
+	/*       is only a few CPU processing cycles.                               */
+	wait_loop_index = ((LL_DAC_DELAY_STARTUP_VOLTAGE_SETTLING_US * (SystemCoreClock / (100000 * 2))) / 10);
+	while(wait_loop_index != 0)
+	{
+		wait_loop_index--;
+	}
+
+	/* Enable DAC channel trigger */
+	/* Note: DAC channel conversion can start from trigger enable:              */
+	/*       - if DAC channel trigger source is set to SW:                      */
+	/*         DAC channel conversion will start after trig order               */
+	/*         using function "LL_DAC_TrigSWConversion()".                      */
+	/*       - if DAC channel trigger source is set to external trigger         */
+	/*         (timer, ...):                                                    */
+	/*         DAC channel conversion can start immediately                     */
+	/*         (after next trig order from external trigger)                    */
+	LL_DAC_EnableTrigger(DAC3, LL_DAC_CHANNEL_1);
+}
+
+void Activate_OPAMP(void)
+{
+	__IO uint32_t wait_loop_index = 0;
+
+	/* Enable OPAMP */
+	LL_OPAMP_Enable(OPAMP6);
+
+	/* Delay for OPAMP startup time.                                            */
+	/* Compute number of CPU cycles to wait for, from delay in us.              */
+	/* Note: Variable divided by 2 to compensate partially                      */
+	/*       CPU processing cycles (depends on compilation optimization).       */
+	/* Note: If system core clock frequency is below 200kHz, wait time          */
+	/*       is only a few CPU processing cycles.                               */
+	wait_loop_index = ((LL_OPAMP_DELAY_STARTUP_US * (SystemCoreClock / (100000 * 2))) / 10);
+	while(wait_loop_index != 0)
+	{
+		wait_loop_index--;
+	}
+}
+
+static void HRTIM1_Start_Output(void)
+{
+	hhrtim1.Instance = HRTIM1;
+
+	HAL_HRTIM_WaveformOutputStart(&hhrtim1, HRTIM_OUTPUT_TE1 );
+	HAL_HRTIM_WaveformCounterStart_IT(&hhrtim1, HRTIM_TIMERID_TIMER_E);
+}
+
 /* USER CODE END 4 */
 
 /**
