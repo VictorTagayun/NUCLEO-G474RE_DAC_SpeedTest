@@ -33,7 +33,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define MInMax_SIZE       (sizeof (MinMaxsamples) / sizeof (uint16_t))
+#define MinMaxsamples_SIZE       (sizeof (MinMaxsamples) / sizeof (uint16_t))
 
 /* USER CODE END PD */
 
@@ -64,7 +64,7 @@ static void MX_TIM6_Init(void);
 
 void LL_DAC3_EnableDMA(void);
 void Activate_DAC(void);
-void LL_Activate_OPAMP6(void);
+void Activate_OPAMP(void);
 
 /* USER CODE END PFP */
 
@@ -108,9 +108,9 @@ int main(void)
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
 
-  LL_DAC3_EnableDMA();
   Activate_DAC();
-  LL_Activate_OPAMP6();
+  Activate_OPAMP();
+  LL_DAC3_EnableDMA();
   LL_TIM_EnableCounter(TIM6);
 
   /* USER CODE END 2 */
@@ -198,21 +198,21 @@ static void MX_DAC3_Init(void)
   /* DAC3 DMA Init */
 
   /* DAC3_CH1 Init */
-  LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_3, LL_DMAMUX_REQ_DAC3_CH1);
+  LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_1, LL_DMAMUX_REQ_DAC3_CH1);
 
-  LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_CHANNEL_3, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
+  LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_CHANNEL_1, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
 
-  LL_DMA_SetChannelPriorityLevel(DMA1, LL_DMA_CHANNEL_3, LL_DMA_PRIORITY_HIGH);
+  LL_DMA_SetChannelPriorityLevel(DMA1, LL_DMA_CHANNEL_1, LL_DMA_PRIORITY_HIGH);
 
-  LL_DMA_SetMode(DMA1, LL_DMA_CHANNEL_3, LL_DMA_MODE_CIRCULAR);
+  LL_DMA_SetMode(DMA1, LL_DMA_CHANNEL_1, LL_DMA_MODE_CIRCULAR);
 
-  LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_CHANNEL_3, LL_DMA_PERIPH_NOINCREMENT);
+  LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_CHANNEL_1, LL_DMA_PERIPH_NOINCREMENT);
 
-  LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_CHANNEL_3, LL_DMA_MEMORY_INCREMENT);
+  LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_CHANNEL_1, LL_DMA_MEMORY_INCREMENT);
 
-  LL_DMA_SetPeriphSize(DMA1, LL_DMA_CHANNEL_3, LL_DMA_PDATAALIGN_WORD);
+  LL_DMA_SetPeriphSize(DMA1, LL_DMA_CHANNEL_1, LL_DMA_PDATAALIGN_WORD);
 
-  LL_DMA_SetMemorySize(DMA1, LL_DMA_CHANNEL_3, LL_DMA_MDATAALIGN_HALFWORD);
+  LL_DMA_SetMemorySize(DMA1, LL_DMA_CHANNEL_1, LL_DMA_MDATAALIGN_HALFWORD);
 
   /* USER CODE BEGIN DAC3_Init 1 */
 
@@ -344,7 +344,7 @@ static void MX_TIM6_Init(void)
   /* USER CODE BEGIN TIM6_Init 1 */
 
   /* USER CODE END TIM6_Init 1 */
-  TIM_InitStruct.Prescaler = 170-LL_TIM_ETR_FILTER_FDIV1_N2;
+  TIM_InitStruct.Prescaler = 8;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
   TIM_InitStruct.Autoreload = 1;
   LL_TIM_Init(TIM6, &TIM_InitStruct);
@@ -369,9 +369,9 @@ static void MX_DMA_Init(void)
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
 
   /* DMA interrupt init */
-  /* DMA1_Channel3_IRQn interrupt configuration */
-  NVIC_SetPriority(DMA1_Channel3_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
-  NVIC_EnableIRQ(DMA1_Channel3_IRQn);
+  /* DMA1_Channel1_IRQn interrupt configuration */
+  NVIC_SetPriority(DMA1_Channel1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 
 }
 
@@ -428,19 +428,19 @@ void LL_DAC3_EnableDMA(void)
 {
 	  /* Set DMA transfer addresses of source and destination */
 	  LL_DMA_ConfigAddresses(DMA1,
-	                         LL_DMA_CHANNEL_3,
+	                         LL_DMA_CHANNEL_1,
 	                         (uint32_t)&MinMaxsamples,
 	                         LL_DAC_DMA_GetRegAddr(DAC3, LL_DAC_CHANNEL_1, LL_DAC_DMA_REG_DATA_12BITS_RIGHT_ALIGNED),
 	                         LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
 
 	  /* Set DMA transfer size */
 	  LL_DMA_SetDataLength(DMA1,
-	                       LL_DMA_CHANNEL_3,
-						   MInMax_SIZE);
+	                       LL_DMA_CHANNEL_1,
+						   MinMaxsamples_SIZE);
 
 	  /* Enable DMA transfer interruption: transfer error */
 //	  LL_DMA_EnableIT_TE(DMA1,
-//	                     LL_DMA_CHANNEL_3);
+//	                     LL_DMA_CHANNEL_1);
 
 	  /* Note: In this example, the only DMA interruption activated is            */
 	  /*       transfer error.                                                     */
@@ -451,7 +451,7 @@ void LL_DAC3_EnableDMA(void)
 	  /* Activation of DMA */
 	  /* Enable the DMA transfer */
 	  LL_DMA_EnableChannel(DMA1,
-	                       LL_DMA_CHANNEL_3);
+	                       LL_DMA_CHANNEL_1);
 
 	  /* Set DAC mode sample-and-hold timings */
 	  // LL_DAC_SetSampleAndHoldSampleTime (DAC1, LL_DAC_CHANNEL_1, 0x3FF);
@@ -465,7 +465,7 @@ void LL_DAC3_EnableDMA(void)
 	  LL_DAC_EnableDMAReq(DAC3, LL_DAC_CHANNEL_1);
 
 	  /* Enable interruption DAC channel1 under-run */
-//	  LL_DAC_EnableIT_DMAUDR1(DAC3);
+//	  LL_DAC_EnableIT_DMAUDR1(DAC1);
 }
 
 void Activate_DAC(void)
@@ -499,7 +499,7 @@ void Activate_DAC(void)
 	LL_DAC_EnableTrigger(DAC3, LL_DAC_CHANNEL_1);
 }
 
-void LL_Activate_OPAMP6(void)
+void Activate_OPAMP(void)
 {
 	__IO uint32_t wait_loop_index = 0;
 
