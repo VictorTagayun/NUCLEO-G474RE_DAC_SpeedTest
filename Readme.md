@@ -100,7 +100,8 @@ Study the speed of DAC using buffered, unbuffered and together with OPAMP follow
 		
 		LL_TIM_SetTriggerOutput(TIM6, LL_TIM_TRGO_UPDATE);
   
-  	### Some issues in the FW https://github.com/STMicroelectronics/STM32CubeG4/issues/24
+  	### Some issues in the FW https://github.com/STMicroelectronics/STM32CubeG4/issues/24  
+	https://community.st.com/s/question/0D53W00000aqkBISAY/timer-prescaler-setting-math-operation-will-produce-wrong-code
 	
   ## DAC
   
