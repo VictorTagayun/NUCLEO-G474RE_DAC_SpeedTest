@@ -16,7 +16,7 @@ Study the speed of DAC using buffered, unbuffered and together with OPAMP follow
 		
   - ### OPAMP Speed used as follower from GPIO output  
   
-  	Blue = GPTO Output  
+  	Blue = GPIO Output  
 	Yellow = DAC/OpAMp output  
 	![](https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_SpeedTest/blob/main/waveforms/DS1Z_QuickPrint78.jpg)
   
@@ -195,3 +195,16 @@ Study the speed of DAC using buffered, unbuffered and together with OPAMP follow
 			  /* Enable interruption DAC channel1 under-run */
 		//	  LL_DAC_EnableIT_DMAUDR1(DAC1);
 		}
+
+
+
+### Other Reference :
+
+[DAC by DMA and OpAmp](https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TIM6)
+
+*Disclaimer:*
+
+*The projects posted here are for learning and educational purposes only.*
+*The purpose of a certain project may be for testing a module and may be just a part of a whole project.*
+*It should not be used in a production or commercial environment.*
+*Any cause of injury and/or death is the sole responsibility of the user.*
