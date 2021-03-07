@@ -3,25 +3,30 @@
 Study the speed of DAC using buffered, unbuffered and together with OPAMP follower
 
   - ### DAC1 Buffered and Unbuffered 160Mhz  
-  
-		Unbuffereduffered  
-		![]() 
-		
-		Buffered  
-		![]() 
-  
-  - ### DAC3 (unbuffered) with OPAMP
-  
-		![]()
-		
-		
-  - ### OPAMP Speed used as follower
-  
-		![]()
-  
-  - ### DAC3 (unbuffered) with OPAMP Min and Max transitions using DMA and TIM6
 
-		![]()
+	Unbuffereduffered  
+	![](https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_SpeedTest/blob/main/waveforms/DS1Z_QuickPrint74.jpg) 
+
+	Buffered  
+	![](https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_SpeedTest/blob/main/waveforms/DS1Z_QuickPrint75.jpg) 
+  
+  - ### DAC3 (unbuffered) with OPAMP  
+  
+	![](https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_SpeedTest/blob/main/waveforms/DS1Z_QuickPrint77.jpg)
+		
+  - ### OPAMP Speed used as follower from GPIO output  
+  
+  	Blue = GPTO Output  
+	Yellow = DAC/OpAMp output  
+	![](https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_SpeedTest/blob/main/waveforms/DS1Z_QuickPrint78.jpg)
+  
+  - ### DAC3 (unbuffered) with OPAMP Min and Max transitions using DMA and TIM6  
+
+	2.5MHz  
+	![](https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_SpeedTest/blob/main/waveforms/DS1Z_QuickPrint80.jpg)
+	
+	4.74MHz  
+	![](https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_SpeedTest/blob/main/waveforms/DS1Z_QuickPrint81.jpg)
 		
 		
   ## FW setup LL DAC  
@@ -60,6 +65,7 @@ Study the speed of DAC using buffered, unbuffered and together with OPAMP follow
 		}
 		
  - ### To change value of DAC and out the value, use the ff codes:  
+ 
 		/* Set the data to be loaded in the data holding register */
 		LL_DAC_ConvertData12RightAligned(DAC1, LL_DAC_CHANNEL_1, tmp_dac_value);
 
